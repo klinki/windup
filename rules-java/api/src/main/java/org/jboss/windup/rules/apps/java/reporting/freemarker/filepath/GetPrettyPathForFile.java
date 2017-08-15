@@ -1,9 +1,13 @@
 package org.jboss.windup.rules.apps.java.reporting.freemarker.filepath;
 
+import org.jboss.windup.graph.GraphContext;
+import org.jboss.windup.graph.model.WindupVertexFrame;
 import org.jboss.windup.graph.model.resource.FileModel;
 import org.jboss.windup.graph.model.resource.ReportResourceFileModel;
 import org.jboss.windup.rules.apps.java.model.JavaClassFileModel;
 import org.jboss.windup.rules.apps.java.model.JavaSourceFileModel;
+
+import java.util.ArrayList;
 
 /**
  * Returns a pretty path for the provided file. If the File appears to represent a Java File, this will attempt to determine the associated Java Class
@@ -43,5 +47,30 @@ public class GetPrettyPathForFile extends AbstractGetPrettyPathForFile
         }
 
         return packageName == null || packageName.equals("") ? filename : packageName + "." + filename;
+    }
+
+    public static void addPrettyPathToModel(FileModel fileModel, GraphContext context) {
+        if (fileModel == null) {
+            return;
+        }
+
+        ArrayList<String> types = fileModel.asVertex().getProperty(WindupVertexFrame.TYPE_PROP);
+
+        if (types.contains(JavaClassFileModel.TYPE)) {
+            //if (fileModel instanceof JavaClassFileModel) {
+            JavaClassFileModel jcfm = ((JavaClassFileModel) fileModel);
+            jcfm.setCachedPrettyPath(jcfm.getPrettyPathWithinProject(true));
+            //} else if (fileModel instanceof ReportResourceFileModel) {
+        } else if (types.contains(JavaSourceFileModel.TYPE)) {
+            JavaSourceFileModel jsfm = context.getFramed().frame(fileModel.asVertex(), JavaSourceFileModel.class);
+            // ((JavaSourceFileModel)fileModel);
+
+            jsfm.setCachedPrettyPath(jsfm.getPrettyPathWithinProject(true));
+        } else if (types.contains(ReportResourceFileModel.TYPE)) {
+            ReportResourceFileModel rrfm = (ReportResourceFileModel)fileModel;
+            rrfm.setCachedPrettyPath(rrfm.getPrettyPathWithinProject(false));
+        } else {
+            fileModel.setCachedPrettyPath(fileModel.getPrettyPathWithinProject(false));
+        }
     }
 }
